@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TradingView Workspace Hub</title>
+    <style>
+        * { box-sizing: border-box; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #0c0d14; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; color: #d1d4dc; }
+        
+        /* Top Navigation Control Bar Layout */
+        .navbar { display: flex; align-items: center; background: #131722; padding: 0 16px; border-bottom: 1px solid #2a2e39; height: 48px; gap: 20px; }
+        .controls-group { display: flex; align-items: center; gap: 8px; }
+        label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #848e9c; white-space: nowrap; }
+        select, input { background: #1e222d; color: #d1d4dc; border: 1px solid #363c4e; padding: 5px 8px; font-size: 12px; border-radius: 4px; outline: none; }
+        select:focus, input:focus { border-color: #2962ff; }
+        .btn-apply { background: #2962ff; color: white; border: none; padding: 6px 14px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; margin-left: auto; }
+        .btn-apply:hover { background: #1e4bd0; }
+
+        /* Control Input Wrapper Blocks */
+        .input-wrapper { display: flex; align-items: center; gap: 12px; }
+        .input-block { display: flex; align-items: center; gap: 4px; }
+        .box-label { font-size: 11px; color: #848e9c; font-weight: bold; }
+
+        /* Main Viewport Workspace Grid Matrix */
+        .grid-container { height: calc(100vh - 48px); width: 100vw; background: #0c0d14; padding: 4px; gap: 4px; box-sizing: border-box; }
+        .chart-box { height: 100%; width: 100%; background: #131722; border-radius: 4px; overflow: hidden; border: 1px solid #1e222d; }
+        
+        /* CSS Structural Split Layout Modifiers */
+        .layout-2 { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
+        .layout-3 { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+        .layout-3 #box-3 { grid-column: span 2; }
+        .layout-4 { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+    </style>
+</head>
+<body>
+
+    <!-- Upper Management Control Bar Frame -->
+    <div class="navbar">
+        <div class="controls-group">
+            <label for="layoutSelect">Layout:</label>
+            <select id="layoutSelect" onchange="updateLayoutMode()">
+                <option value="2">2 Charts</option>
+                <option value="3">3 Charts</option>
+                <option value="4" selected>4 Charts</option>
+            </select>
+        </div>
+        
+        <div style="border-left: 1px solid #2a2e39; height: 20px;"></div>
+        
+        <!-- Live Ticker Setting Panels -->
+        <div class="input-wrapper">
+            <div class="input-block" id="block-0">
+                <span class="box-label">C1:</span>
+                <input type="text" id="sym-0" value="FX:XAUUSD" style="width: 90px;">
+                <select id="tf-0"><option value="5">5m</option><option value="15">15m</option><option value="60">1h</option><option value="240">4h</option><option value="D" selected>1D</option></select>
+            </div>
+            
+            <div class="input-block" id="block-1">
+                <span class="box-label">C2:</span>
+                <input type="text" id="sym-1" value="FX:XAGUSD" style="width: 90px;">
+                <select id="tf-1"><option value="5">5m</option><option value="15">15m</option><option value="60">1h</option><option value="240">4h</option><option value="D" selected>1D</option></select>
+            </div>
+            
+            <div class="input-block" id="block-2">
+                <span class="box-label">C3:</span>
+                <input type="text" id="sym-2" value="FX:XAUUSD" style="width: 90px;">
+                <select id="tf-2"><option value="5">5m</option><option value="15">15m</option><option value="60" selected>1h</option><option value="240">4h</option><option value="D">1D</option></select>
+            </div>
+            
+            <div class="input-block" id="block-3">
+                <span class="box-label">C4:</span>
+                <input type="text" id="sym-3" value="FX:XAGUSD" style="width: 90px;">
+                <select id="tf-3"><option value="5">5m</option><option value="15">15m</option><option value="60" selected>1h</option><option value="240">4h</option><option value="D">1D</option></select>
+            </div>
+        </div>
+
+        <button class="btn-apply" onclick="refreshDashboard()">⚡ Update Workspace</button>
+    </div>
+
+    <!-- Active Workspace Viewport -->
+    <div id="dashboardGrid" class="grid-container layout-4">
+        <div id="box-1" class="chart-box"></div>
+        <div id="box-2" class="chart-box"></div>
+        <div id="box-3" class="chart-box"></div>
+        <div id="box-4" class="chart-box"></div>
+    </div>
+
+    <!-- Load TradingView Advanced Charting Widget Engine securely -->
+    <script type="module" src="https://tradingview.com" async></script>
+
+    <script>
+        function updateLayoutMode() {
+            const layout = document.getElementById('layoutSelect').value;
+            document.getElementById('block-2').style.display = (layout === "2") ? "none" : "flex";
+            document.getElementById('block-3').style.display = (layout === "2" || layout === "3") ? "none" : "flex";
+            refreshDashboard();
+        }
+
+        function buildWidgetComponent(containerElement, symbol, interval) {
+            const containerWrapper = document.createElement('div');
+            containerWrapper.style.height = '100%';
+            containerWrapper.style.width = '100%';
+
+            const scriptEl = document.createElement('script');
+            scriptEl.type = 'text/javascript';
+            scriptEl.src = 'https://tradingview.com';
+            scriptEl.async = true;
+            scriptEl.innerHTML = JSON.stringify({
+                "autosize": true,
+                "symbol": symbol,
+                "interval": interval,
+                "timezone": "Etc/UTC",
+                "theme": "dark",
+                "style": "1",
+                "locale": "en",
+                "allow_symbol_change": true,
+                "calendar": false,
+                "support_host": "https://tradingview.com"
+            });
+
+            containerWrapper.appendChild(scriptEl);
+            containerElement.appendChild(containerWrapper);
+        }
+
+        function refreshDashboard() {
+            const layout = document.getElementById('layoutSelect').value;
+            const grid = document.getElementById('dashboardGrid');
+            
+            grid.className = `grid-container layout-${layout}`;
+            grid.innerHTML = '';
+            
+            const count = parseInt(layout);
+            for (let i = 1; i <= count; i++) {
+                grid.insertAdjacentHTML('beforeend', `<div id="box-${i}" class="chart-box"></div>`);
+            }
+
+            buildWidgetComponent(document.getElementById('box-1'), document.getElementById('sym-0').value.toUpperCase().trim(), document.getElementById('tf-0').value);
+            buildWidgetComponent(document.getElementById('box-2'), document.getElementById('sym-1').value.toUpperCase().trim(), document.getElementById('tf-1').value);
+            
+            if (count >= 3) {
+                buildWidgetComponent(document.getElementById('box-3'), document.getElementById('sym-2').value.toUpperCase().trim(), document.getElementById('tf-2').value);
+            }
+            if (count === 4) {
+                buildWidgetComponent(document.getElementById('box-4'), document.getElementById('sym-3').value.toUpperCase().trim(), document.getElementById('tf-3').value);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateLayoutMode();
+        });
+    </script>
+</body>
+</html>
