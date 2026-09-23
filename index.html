@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TradingView Workspace Hub</title>
+    <style>
+        * { box-sizing: border-box; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; background: #0c0d14; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; overflow: hidden; color: #d1d4dc; }
+        
+        /* Top Navigation Control Bar Layout */
+        .navbar { display: flex; align-items: center; background: #131722; padding: 0 16px; border-bottom: 1px solid #2a2e39; height: 48px; gap: 20px; }
+        .controls-group { display: flex; align-items: center; gap: 8px; }
+        label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: #848e9c; white-space: nowrap; }
+        select { background: #1e222d; color: #d1d4dc; border: 1px solid #363c4e; padding: 5px 8px; font-size: 12px; border-radius: 4px; outline: none; cursor: pointer; }
+        select:focus { border-color: #2962ff; }
+        .btn-apply { background: #2962ff; color: white; border: none; padding: 6px 14px; font-size: 12px; font-weight: bold; border-radius: 4px; cursor: pointer; margin-left: auto; }
+        .btn-apply:hover { background: #1e4bd0; }
+
+        /* Control Input Wrapper Blocks */
+        .input-wrapper { display: flex; align-items: center; gap: 12px; }
+        .input-block { display: flex; align-items: center; gap: 4px; }
+        .box-label { font-size: 11px; color: #848e9c; font-weight: bold; }
+
+        /* Main Viewport Workspace Grid Matrix */
+        .grid-container { height: calc(100vh - 48px); width: 100vw; background: #0c0d14; padding: 4px; gap: 4px; box-sizing: border-box; }
+        .chart-box { height: 100%; width: 100%; background: #131722; border-radius: 4px; overflow: hidden; border: 1px solid #1e222d; }
+        
+        /* CSS Structural Split Layout Modifiers */
+        .layout-2 { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr; }
+        .layout-3 { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+        .layout-3 #box-3 { grid-column: span 2; }
+        .layout-4 { display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; }
+    </style>
+</head>
+<body>
+
+    <!-- Upper Management Control Bar Frame -->
+    <div class="navbar">
+        <div class="controls-group">
+            <label for="layoutSelect">Layout:</label>
+            <select id="layoutSelect" onchange="updateLayoutMode()">
+                <option value="2">2 Charts</option>
+                <option value="3">3 Charts</option>
+                <option value="4" selected>4 Charts</option>
+            </select>
+        </div>
+        
+        <div style="border-left: 1px solid #2a2e39; height: 20px;"></div>
+
+        <!-- FIXED: Added Single Master Timeframe Controller that changes all panels at once -->
+        <div class="controls-group">
+            <label for="masterTimeframe" style="color: #ff9800;">⏳ Global TF:</label>
+            <select id="masterTimeframe" onchange="refreshDashboard()">
+                <option value="5">5m</option>
+                <option value="15">15m</option>
+                <option value="60">1h</option>
+                <option value="240">4h</option>
+                <option value="D" selected>1D</option>
+            </select>
+        </div>
+
+        <div style="border-left: 1px solid #2a2e39; height: 20px;"></div>
+        
+        <!-- FIXED: Replaced free-text input fields with strict dropdown selections using valid OANDA gold/silver feeds -->
+        <div class="input-wrapper">
+            <div class="input-block" id="block-0">
+                <span class="box-label">C1:</span>
+                <select id="sym-0" onchange="refreshDashboard()">
+                    <option value="OANDA:XAUEUR" selected>XAU/EUR</option>
+                    <option value="OANDA:XAUGBP">XAU/GBP</option>
+                    <option value="OANDA:XAGEUR">XAG/EUR</option>
+                    <option value="OANDA:XAGGBP">XAG/GBP</option>
+                </select>
+            </div>
+            
+            <div class="input-block" id="block-1">
+                <span class="box-label">C2:</span>
+                <select id="sym-1" onchange="refreshDashboard()">
+                    <option value="OANDA:XAUEUR">XAU/EUR</option>
+                    <option value="OANDA:XAUGBP" selected>XAU/GBP</option>
+                    <option value="OANDA:XAGEUR">XAG/EUR</option>
+                    <option value="OANDA:XAGGBP">XAG/GBP</option>
+                </select>
+            </div>
+            
+            <div class="input-block" id="block-2">
+                <span class="box-label">C3:</span>
+                <select id="sym-2" onchange="refreshDashboard()">
+                    <option value="OANDA:XAUEUR">XAU/EUR</option>
+                    <option value="OANDA:XAUGBP">XAU/GBP</option>
+                    <option value="OANDA:XAGEUR" selected>XAG/EUR</option>
+                    <option value="OANDA:XAGGBP">XAG/GBP</option>
+                </select>
+            </div>
+            
+            <div class="input-block" id="block-3">
+                <span class="box-label">C4:</span>
+                <select id="sym-3" onchange="refreshDashboard()">
+                    <option value="OANDA:XAUEUR">XAU/EUR</option>
+                    <option value="OANDA:XAUGBP">XAU/GBP</option>
+                    <option value="OANDA:XAGEUR">XAG/EUR</option>
+                    <option value="OANDA:XAGGBP" selected>XAG/GBP</option>
+                </select>
+            </div>
+        </div>
+
+        <button class="btn-apply" onclick="refreshDashboard()">⚡ Update Workspace</button>
+    </div>
+
+    <!-- Active Workspace Viewport -->
+    <div id="dashboardGrid" class="grid-container layout-4">
+        <div id="box-1" class="chart-box"></div>
+        <div id="box-2" class="chart-box"></div>
+        <div id="box-3" class="chart-box"></div>
+        <div id="box-4" class="chart-box"></div>
+    </div>
+
+    <script>
+        // Library loader helper function
+        function loadTradingViewLibrary() {
+            return new Promise((resolve, reject) => {
+                if (window.TradingView) return resolve();
+                
+                const script = document.createElement('script');
+                script.src = "https://s3.tradingview.com/tv.js";
+                script.type = "text/javascript";
+                script.async = true;
+                script.onload = () => resolve();
+                script.onerror = () => reject(new Error("TradingView script failed to load."));
+                document.head.appendChild(script);
+            });
+        }
+
+        function updateLayoutMode() {
+            const layout = document.getElementById('layoutSelect').value;
+            
+            document.getElementById('block-2').style.display = (layout === "2") ? "none" : "flex";
+            document.getElementById('block-3').style.display = (layout === "2" || layout === "3") ? "none" : "flex";
+            
+            refreshDashboard();
+        }
+
+        async function refreshDashboard() {
+            try {
+                await loadTradingViewLibrary();
+                
+                const layout = document.getElementById('layoutSelect').value;
+                const grid = document.getElementById('dashboardGrid');
+                // Tied all loops to a single master timeframe selector reference
+                const interval = document.getElementById('masterTimeframe').value;
+                
+                grid.className = `grid-container layout-${layout}`;
+                grid.innerHTML = '';
+                
+                const count = parseInt(layout);
+                
+                for (let i = 0; i < count; i++) {
+                    const boxId = `box-${i + 1}`;
+                    grid.insertAdjacentHTML('beforeend', `<div id="${boxId}" class="chart-box"></div>`);
+                    
+                    const symbol = document.getElementById(`sym-${i}`).value;
+
+                    // KEPT EXACTLY: This micro-timeout delay loops elements perfectly into DOM paths
+                    setTimeout(() => {
+                        new TradingView.widget({
+                            "autosize": true,
+                            "symbol": symbol,
+                            "interval": interval,
+                            "timezone": "Etc/UTC",
+                            "theme": "dark",
+                            "style": "1",
+                            "locale": "en",
+                            "enable_publishing": false,
+                            "hide_side_toolbar": false,
+                            "allow_symbol_change": true,
+                            "container_id": boxId
+                        });
+                    }, 10);
+                }
+            } catch (error) {
+                console.error(error);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            updateLayoutMode();
+        });
+    </script>
+</body>
+</html>
